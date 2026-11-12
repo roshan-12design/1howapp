@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HowApp - Dark Secure Messenger</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0c1317;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #e9edef;
+        }
+        .whatsapp-dark-bg {
+            background-color: #0b141a;
+            background-image: linear-gradient(rgba(11, 20, 26, 0.92), rgba(11, 20, 26, 0.92)), url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+            background-repeat: repeat;
+        }
+        /* Custom Dark Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.16);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center overflow-hidden">
+
+    <!-- PASSWORD & NAME LOCK SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 bg-[#0b141a] z-50 flex items-center justify-center p-4">
+        <div class="bg-[#202c33] p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border border-[#2a3942]">
+            <div class="w-16 h-16 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-[#e9edef] mb-1">HowApp</h2>
+            <p class="text-[#8696a0] text-sm mb-6">Enter your name and the secret password to unlock chats.</p>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <input type="text" id="username-input" placeholder="Your Name..." class="w-full px-4 py-3 bg-[#2a3942] border border-[#374248] text-[#e9edef] placeholder-[#8696a0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a884] text-sm" required>
+                <input type="password" id="password-input" placeholder="Secret Password..." class="w-full px-4 py-3 bg-[#2a3942] border border-[#374248] text-[#e9edef] placeholder-[#8696a0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a884] text-sm" required>
+                <button type="submit" class="w-full bg-[#00a884] hover:bg-[#06cf9c] text-[#111b21] font-bold py-3 rounded-lg transition duration-200 shadow-md">Enter HowApp</button>
+            </form>
+            <p id="error-msg" class="text-red-400 text-xs mt-3 hidden">Incorrect password! Access denied.</p>
+        </div>
+    </div>
+
+    <!-- MAIN CHAT CONTAINER -->
+    <div id="chat-container" class="hidden w-full max-w-6xl h-full md:h-[94vh] md:rounded-xl shadow-2xl flex overflow-hidden border border-[#2a3942]">
+        
+        <!-- SIDEBAR -->
+        <div class="hidden md:flex md:w-1/3 bg-[#111b21] border-r border-[#2a3942] flex-col">
+            <!-- Sidebar Header -->
+            <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-[#2a3942]">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-[#00a884] text-[#111b21] rounded-full flex items-center justify-center font-bold text-lg shadow-sm" id="user-avatar">H</div>
+                    <div>
+                        <span class="font-semibold text-[#e9edef] block text-sm" id="display-username">User</span>
+                        <span class="text-[11px] text-[#00a884]">Online</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 text-[#aebac1]">
+                    <button onclick="lockApp()" title="Lock HowApp" class="hover:text-red-400 transition"><i class="fa-solid fa-right-from-bracket text-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="p-2 bg-[#111b21] border-b border-[#2a3942]">
+                <div class="bg-[#202c33] flex items-center px-3 py-1.5 rounded-lg">
+                    <i class="fa-solid fa-search text-[#8696a0] text-sm mr-3"></i>
+                    <input type="text" placeholder="Search or start new chat" class="bg-transparent w-full text-sm text-[#e9edef] placeholder-[#8696a0] focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Chat List -->
+            <div class="flex-1 overflow-y-auto bg-[#111b21]">
+                <div class="flex items-center px-4 py-3 bg-[#2a3942] cursor-pointer border-l-4 border-[#00a884]">
+                    <div class="w-12 h-12 bg-[#00a884]/20 text-[#00a884] rounded-full flex items-center justify-center text-xl mr-3">
+                        <i class="fa-solid fa-user-secret"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="font-semibold text-[#e9edef] truncate">HowApp Private Room</h3>
+                            <span class="text-xs text-[#00a884]">Active</span>
+                        </div>
+                        <p class="text-sm text-[#8696a0] truncate" id="chat-preview">Tap to view messages...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT WINDOW (Responsive for mobile & desktop) -->
+        <div class="flex flex-1 flex-col whatsapp-dark-bg">
+            <!-- Chat Header -->
+            <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-[#2a3942] shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-[#00a884]/20 text-[#00a884] rounded-full flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-user-secret"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-[#e9edef] text-sm">HowApp Private Room</h3>
+                        <p class="text-xs text-[#8696a0]" id="header-user-status">Logged in</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-5 text-[#aebac1] text-lg">
+                    <button onclick="lockApp()" title="Lock Chat" class="md:hidden hover:text-red-400"><i class="fa-solid fa-lock"></i></button>
+                    <button class="hover:text-[#00a884] hidden sm:inline"><i class="fa-solid fa-video"></i></button>
+                    <button class="hover:text-[#00a884] hidden sm:inline"><i class="fa-solid fa-phone"></i></button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="messages-box" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Messages populated via JS -->
+            </div>
+
+            <!-- Sticker / GIF Picker Panel -->
+            <div id="picker-panel" class="hidden bg-[#202c33] border-t border-[#2a3942] p-3 grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto">
+                <!-- Stickers -->
+                <button onclick="sendSticker('🔥')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">🔥</button>
+                <button onclick="sendSticker('🚀')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">🚀</button>
+                <button onclick="sendSticker('😎')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">😎</button>
+                <button onclick="sendSticker('🎉')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">🎉</button>
+                <button onclick="sendSticker('❤️')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">❤️</button>
+                <button onclick="sendSticker('😂')" class="text-3xl p-2 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition">😂</button>
+                <!-- GIFs -->
+                <button onclick="sendGif('https://media.giphy.com/media/26vUSsV14a5oY/giphy.gif')" class="p-1 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition"><img src="https://media.giphy.com/media/26vUSsV14a5oY/giphy.gif" class="h-12 w-full object-cover rounded"></button>
+                <button onclick="sendGif('https://media.giphy.com/media/3o7TKSjRrfIPjeiOkM/giphy.gif')" class="p-1 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition"><img src="https://media.giphy.com/media/3o7TKSjRrfIPjeiOkM/giphy.gif" class="h-12 w-full object-cover rounded"></button>
+                <button onclick="sendGif('https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif')" class="p-1 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition"><img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" class="h-12 w-full object-cover rounded"></button>
+                <button onclick="sendGif('https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif')" class="p-1 bg-[#2a3942] rounded-lg hover:bg-[#374248] transition"><img src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif" class="h-12 w-full object-cover rounded"></button>
+            </div>
+
+            <!-- Input Footer -->
+            <div class="bg-[#202c33] px-4 py-3 flex items-center space-x-3 border-t border-[#2a3942]">
+                <button onclick="togglePicker()" title="Stickers & GIFs" class="text-[#8696a0] text-xl hover:text-[#e9edef] transition"><i class="fa-regular fa-face-smile"></i></button>
+                
+                <!-- Attachment Button -->
+                <label title="Send Image, Video, or Audio" class="text-[#8696a0] text-xl hover:text-[#e9edef] cursor-pointer transition">
+                    <i class="fa-solid fa-paperclip"></i>
+                    <input type="file" id="media-input" accept="image/*,video/*,audio/*" class="hidden" onchange="handleMediaUpload(event)">
+                </label>
+
+                <!-- Text Input -->
+                <input type="text" id="message-input" placeholder="Type a message..." class="flex-1 bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] px-4 py-2.5 rounded-lg text-sm focus:outline-none" onkeypress="handleKeyPress(event)">
+                
+                <!-- Send Button -->
+                <button onclick="sendTextMessage()" class="text-[#00a884] text-xl hover:text-[#06cf9c] transition"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        const CHAT_PASSWORD = "RandR"; 
+        let currentUser = "";
+
+        const authScreen = document.getElementById('auth-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const usernameInput = document.getElementById('username-input');
+        const passwordInput = document.getElementById('password-input');
+        const errorMsg = document.getElementById('error-msg');
+        const messagesBox = document.getElementById('messages-box');
+        const messageInput = document.getElementById('message-input');
+        const pickerPanel = document.getElementById('picker-panel');
+
+        // Restore session if already logged in
+        window.onload = function() {
+            const savedUser = sessionStorage.getItem('howapp_user');
+            if(sessionStorage.getItem('howapp_unlocked') === 'true' && savedUser) {
+                currentUser = savedUser;
+                unlockApp();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const enteredName = usernameInput.value.trim();
+            const enteredPass = passwordInput.value;
+
+            if(enteredPass === CHAT_PASSWORD && enteredName !== "") {
+                currentUser = enteredName;
+                sessionStorage.setItem('howapp_unlocked', 'true');
+                sessionStorage.setItem('howapp_user', currentUser);
+                unlockApp();
+            } else {
+                errorMsg.classList.remove('hidden');
+                passwordInput.value = '';
+            }
+        }
+
+        function unlockApp() {
+            authScreen.classList.add('hidden');
+            chatContainer.classList.remove('hidden');
+            document.getElementById('display-username').innerText = currentUser;
+            document.getElementById('user-avatar').innerText = currentUser.charAt(0).toUpperCase();
+            document.getElementById('header-user-status').innerText = `Logged in as ${currentUser}`;
+            loadMessages();
+        }
+
+        function lockApp() {
+            sessionStorage.removeItem('howapp_unlocked');
+            sessionStorage.removeItem('howapp_user');
+            authScreen.classList.remove('hidden');
+            chatContainer.classList.add('hidden');
+            passwordInput.value = '';
+            errorMsg.classList.add('hidden');
+        }
+
+        // Load past chats from localStorage
+        function loadMessages() {
+            messagesBox.innerHTML = '';
+            let messages = JSON.parse(localStorage.getItem('howapp_dark_messages')) || [];
+            
+            if(messages.length === 0) {
+                messagesBox.innerHTML = `<div class="text-center text-[#ffd279] text-xs my-4 bg-[#182229] py-2 px-4 rounded-lg shadow-sm w-fit mx-auto border border-[#2a3942]">🔒 Welcome to HowApp. All messages, media, and stickers are saved and restored automatically.</div>`;
+                return;
+            }
+
+            messages.forEach(msg => {
+                appendMessageToDOM(msg);
+            });
+            document.getElementById('chat-preview').innerText = messages[messages.length - 1].preview || "Media message";
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        function saveAndAppendMessage(msgObj) {
+            let messages = JSON.parse(localStorage.getItem('howapp_dark_messages')) || [];
+            messages.push(msgObj);
+            localStorage.setItem('howapp_dark_messages', JSON.stringify(messages));
+            appendMessageToDOM(msgObj);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+            document.getElementById('chat-preview').innerText = `${msgObj.sender}: ${msgObj.preview}`;
+        }
+
+        function appendMessageToDOM(msgObj) {
+            const timeString = new Date(msgObj.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const isMe = msgObj.sender === currentUser;
+            let contentHTML = '';
+
+            if (msgObj.type === 'text') {
+                contentHTML = `<p class="text-sm text-[#e9edef] break-words">${escapeHTML(msgObj.content)}</p>`;
+            } else if (msgObj.type === 'image') {
+                contentHTML = `<img src="${msgObj.content}" class="rounded-lg max-w-xs max-h-60 object-cover mb-1">`;
+            } else if (msgObj.type === 'video') {
+                contentHTML = `<video src="${msgObj.content}" controls class="rounded-lg max-w-xs max-h-60 mb-1"></video>`;
+            } else if (msgObj.type === 'audio') {
+                contentHTML = `<audio src="${msgObj.content}" controls class="max-w-xs my-1"></audio>`;
+            } else if (msgObj.type === 'sticker' || msgObj.type === 'gif') {
+                contentHTML = `${msgObj.content}`;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isMe ? "flex justify-end mb-2" : "flex justify-start mb-2";
+            
+            const bubbleColor = isMe ? "bg-[#005c4b]" : "bg-[#202c33]";
+            const senderLabel = isMe ? "" : `<span class="text-xs font-semibold text-[#00a884] block mb-0.5">${escapeHTML(msgObj.sender || 'Unknown')}</span>`;
+
+            messageDiv.innerHTML = `
+                <div class="${bubbleColor} px-3 py-1.5 rounded-lg shadow-md max-w-xs md:max-w-md relative">
+                    ${senderLabel}
+                    ${contentHTML}
+                    <span class="text-[10px] text-[#8696a0] float-right ml-3 mt-1">${timeString} <i class="fa-solid fa-check-double text-[#53bdeb]"></i></span>
+                </div>
+            `;
+            messagesBox.appendChild(messageDiv);
+        }
+
+        function sendTextMessage() {
+            const text = messageInput.value.trim();
+            if(!text) return;
+
+            const msgObj = {
+                sender: currentUser,
+                type: 'text',
+                content: text,
+                preview: text,
+                timestamp: Date.now()
+            };
+
+            saveAndAppendMessage(msgObj);
+            messageInput.value = '';
+        }
+
+        function handleKeyPress(e) {
+            if(e.key === 'Enter') {
+                sendTextMessage();
+            }
+        }
+
+        function handleMediaUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                let type = 'image';
+                if(file.type.startsWith('video/')) type = 'video';
+                if(file.type.startsWith('audio/')) type = 'audio';
+
+                const msgObj = {
+                    sender: currentUser,
+                    type: type,
+                    content: uploadEvent.target.result,
+                    preview: `[${type.toUpperCase()}]`,
+                    timestamp: Date.now()
+                };
+
+                saveAndAppendMessage(msgObj);
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; // Reset input so same file can be uploaded again if needed
+        }
+
+        function sendSticker(emoji) {
+            const msgObj = {
+                sender: currentUser,
+                type: 'sticker',
+                content: `<span class="text-5xl">${emoji}</span>`,
+                preview: 'Sticker',
+                timestamp: Date.now()
+            };
+            saveAndAppendMessage(msgObj);
+            togglePicker();
+        }
+
+        function sendGif(url) {
+            const msgObj = {
+                sender: currentUser,
+                type: 'gif',
+                content: `<img src="${url}" class="rounded-lg max-w-xs max-h-48 object-cover">`,
+                preview: 'GIF',
+                timestamp: Date.now()
+            };
+            saveAndAppendMessage(msgObj);
+            togglePicker();
+        }
+
+        function togglePicker() {
+            pickerPanel.classList.toggle('hidden');
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
